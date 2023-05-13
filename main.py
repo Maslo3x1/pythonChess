@@ -10,8 +10,8 @@ WIDTH = 1000
 HEIGHT = 900
 screen = p.display.set_mode([WIDTH, HEIGHT])
 p.display.set_caption('2 player chess!')
-####font = p.font.Font('freesansbold.tff', 20)
-####big_font = p.font.Font('freesansbold.ttf', 50)
+font = p.font.Font('freesansbold.ttf', 20)
+big_font = p.font.Font('freesansbold.ttf', 50)
 timer = p.time.Clock()
 fps = 60
 
@@ -96,8 +96,42 @@ def draw_board():
             p.draw.rect(screen, 'light grey', [600 - (column * 200), row * 100, 100, 100])
         else:
             p.draw.rect(screen, 'light grey', [700 - (column * 200), row * 100, 100, 100])
-        #p.draw.rect()
+        p.draw.rect(screen, 'gray', [0, 800, WIDTH, 100])
+        p.draw.rect(screen, 'gold', [0, 800, WIDTH, 100], 5)
+        p.draw.rect(screen, 'gold', [800, 0, 200, HEIGHT], 5)
+        status_text = ["White: select a piece to move.", "White: select a destination.", "Black: select a piece to move.", "Black: select a destination."]
+        screen.blit(big_font.render(status_text[turn_step], True, 'black'), (20, 820))
+        for i in range(9):
+            p.draw.line(screen, 'black', (0, 100 * i), (800, 100 * i), 2)
+            p.draw.line(screen, 'black', (100 * i, 0), (100 * i, 800), 2)
 
+#draw pieces onto a board
+
+def draw_pieces():
+    for i in range(len(white_pieces)):
+        index = piece_list.index(white_pieces[i])
+        if white_pieces[i] == 'pawn':
+            screen.blit(white_pawn, (white_locations[i][0] * 100 + 22, white_locations[i][1] * 100 + 30))
+        else:
+            screen.blit(white_images[index], (white_locations[i][0] * 100 + 10, white_locations[i][1] * 100 + 10))
+        if turn_step < 2:
+            if selection == i:
+                p.draw.rect(screen, 'red', [white_locations[i][0] * 100 + 1], [white_locations[i][0] * 100 + 1, 100, 100], 2)
+
+    for i in range(len(black_pieces)):
+        index = piece_list.index(black_pieces[i])
+        if black_pieces[i] == 'pawn':
+            screen.blit(black_pawn, (black_locations[i][0] * 100 + 22, black_locations[i][1] * 100 + 30))
+        else:
+            screen.blit(black_images[index], (black_locations[i][0] * 100 + 10, black_locations[i][1] * 100 + 10))
+        if turn_step >= 2:
+            if selection == i:
+                p.draw.rect(screen, 'blue', [black_locations[i][0] * 100 + 1], [black_locations[i][0] * 100 + 1, 100, 100], 2)
+
+# function to check all pieces valid options on board
+
+def check_options():
+    pass
 
 #game loop
 
@@ -106,12 +140,51 @@ while run:
     timer.tick(fps)
     screen.fill('dark grey')
     draw_board()
+    draw_pieces()
 
     #event handling
 
     for event in p.event.get():
         if event.type == p.QUIT:
             run = False
+        if event.type == p.MOUSEBUTTONDOWN and event.button == 1:
+            x_coord = event.pos[0] // 100
+            y_coord = event.pos[1] // 100
+            click_coord = (x_coord, y_coord)
+            if turn_step < 2:
+                if click_coord == white_locations:
+                    selection = white_locations.index(click_coord)
+                    if turn_step == 0:
+                        turn_step  = 1
+                if click_coord in valid_moves and selection != 100:
+                    white_locations[selection] = click_coord
+                    if click_coord in black_locations:
+                        black_piece = black_locations.index(click_coord)
+                        captured_pieces_white.append(black_pieces[black_piece])
+                        black_pieces.pop(black_piece)
+                        black_locations.pop(black_piece)
+                    black_options = check_options(black_pieces, black_locations, 'black')
+                    white_options = check_options(white_pieces, white_locations, 'white')
+                    turn_step = 2
+                    selection = 100
+                    valid_moves = []
+            if turn_step > 1:
+                if click_coord == black_locations:
+                    selection = black_locations.index(click_coord)
+                    if turn_step == 2:
+                        turn_step  = 3
+                if click_coord in valid_moves and selection != 100:
+                    black_locations[selection] = click_coord
+                    if click_coord in white_locations:
+                        white_piece = white_locations.index(click_coord)
+                        captured_pieces_black.append(white_pieces[white_piece])
+                        white_pieces.pop(white_piece)
+                        white_locations.pop(white_piece)
+                    black_options = check_options(black_pieces, black_locations, 'black')
+                    white_options = check_options(white_pieces, white_locations, 'white')
+                    turn_step = 0
+                    selection = 100
+                    valid_moves = []
 
     p.display.flip()
 
